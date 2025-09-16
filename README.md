@@ -1,2 +1,2 @@
-# Node_js_Project
-2학년 2학기 네트워크 프로그래밍 
+# Node_js_Project_2025_2
+2025년 2학년 Node.js 프로젝트 
