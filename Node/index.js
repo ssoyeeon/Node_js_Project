@@ -22,11 +22,8 @@ function loadResource()
     }
 }
 
-function saveResources()
-{
-    fs.writeFileSync(resourceFilePath, JSON.stringify(global.players, null, 2));
-}
 
-app.listen(port, () => {
-    console.log('서버가 http://localhost:${port}에서 실행 중 입니다.');
+app.listen(port, () => 
+{
+    console.log(`서버가 http://localhost:${port}에서 실행 중 입니다.`);
 })
