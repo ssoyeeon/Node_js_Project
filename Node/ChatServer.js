@@ -28,18 +28,62 @@ SetupServerEvent()
             playerId : playerId,
             message : '서버에 연결 되었습니다!'
         };
+
+        //기존 플레이어들 정보를 새 플레이어에게 전송
+        this.players.forEach((player, pid) => {
+            if(pid !== playerId)
+            {
+                const joinMsg = {
+                    type : 'playerJoin',
+                    playerId : pid,
+                    position: player.position,
+                    rotation: player.rotation
+                };
+                socket.send(JSON.stringify(joinMsg));
+                console.log(`기존 플레이어 정보 전송 : ${pid} -> ${playerId}`);
+            }
+        });
+
         socket.send(JSON.stringify(welcomData));
 
         sockey.on('message', (message) => {
             try{
                 const data = JSON.parse(message);
-                console.log('수신된 메세지 : ', data);
 
-                this.broadcast({
-                    type: 'chat',
-                    playerId: playerId,
-                    message: data.message
-                });
+                if(data.type ==='chat')
+                {
+                    console.log('수신된 메세지 : ', data);
+
+                    this.broadcast({
+                        type: 'chat',
+                        playerId: playerId,
+                        message: data.message
+                    });
+                }
+                else if(data.type === 'positionUpdatge')
+                {
+                    const player = this.players.get(playerId);
+                    if(player)
+                    {
+                        if(data.position)       //위치 값 저장
+                        {
+                            player.position = data.position;
+                        }
+                        if(data.rotation)       //회전 값 저장
+                        {
+                            player.rotation = data.rotation;
+                        }
+                    }
+
+                    //다른 플레이어들에게 브로드 캐스트
+                    const updateMsg = {
+                        type : 'positionUpdate',
+                        playerId : playerId,
+                        position : player.position,
+                        rotation : player.rotation
+                    };
+                    this.broadcast(updateMsg, socket);
+                }
             }
             catch
             {
@@ -63,16 +107,24 @@ SetupServerEvent()
         });
     });
 
-    broadcast(data)
+    broadcast(data, excludeSocket = null)
     {
         const message = JSON.stringify(data);
+        let sentCount = 0;
+
         this.clients.forEach(clients =>
         {
-            if(clients.readyState === WebSocket.OPEN)
+            if( clients !== excludeSocket && clients.readyState === WebSocket.OPEN)
             {
                 clients.send(message);
+                sentCount++;
             }
         });
+
+        if(data.type !== 'positionUpdate')
+        {
+            console.log(`브로드 캐스트 완료 ${data.type} (${sentCount} 명에게 전송)`);
+        }
     }
 
     generatePlayerId()
